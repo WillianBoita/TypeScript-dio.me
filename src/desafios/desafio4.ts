@@ -1,26 +1,32 @@
-// Um desenvolvedor tentou criar um projeto que consome a base de dados de filme do TMDB para criar um organizador de filmes, mas desistiu 
-// pois considerou o seu código inviável. Você consegue usar typescript para organizar esse código e a partir daí aprimorar o que foi feito?
+// um dia eu termino
 
-// A ideia dessa atividade é criar um aplicativo que: 
-//    - Busca filmes
-//    - Apresenta uma lista com os resultados pesquisados
-//    - Permite a criação de listas de filmes e a posterior adição de filmes nela
+interface HttpClientProps {
+    url: string,
+    method: string,
+    body?: Record<string, any> | string | null
+}
 
-// Todas as requisições necessárias para as atividades acima já estão prontas, mas a implementação delas ficou pela metade (não vou dar tudo de graça).
-// Atenção para o listener do botão login-button que devolve o sessionID do usuário
-// É necessário fazer um cadastro no https://www.themoviedb.org/ e seguir a documentação do site para entender como gera uma API key https://developers.themoviedb.org/3/getting-started/introduction
+interface CriarListaProps {
+    nomeDaLista: string,
+    descricao: string
+}
 
-var apiKey = '3f301be7381a03ad8d352314dcc3ec1d';
-let apiKey;
-let requestToken; 
-let username;
-let password;
-let sessionId;
-let listId = '7101979';
+interface AdicionarFilmeNaListaProps {
+    filmeId: number,
+    listaId: number
+}
 
-let loginButton = document.getElementById('login-button');
-let searchButton = document.getElementById('search-button');
-let searchContainer = document.getElementById('search-container');
+let apiKey: string;
+let requestToken: string;
+let username: string;
+let password: string;
+let sessionId: string;
+let listId: string = '7101979';
+
+let addButton = document.getElementById('add-movie') as HTMLButtonElement;
+let loginButton = document.getElementById('login-button') as HTMLButtonElement;
+let searchButton = document.getElementById('search-button') as HTMLButtonElement;
+let searchContainer = document.getElementById('search-container') as HTMLDivElement;
 
 loginButton.addEventListener('click', async () => {
   await criarRequestToken();
@@ -29,48 +35,72 @@ loginButton.addEventListener('click', async () => {
 })
 
 searchButton.addEventListener('click', async () => {
-  let lista = document.getElementById("lista");
+  let lista = document.getElementById("lista") as HTMLUListElement;
   if (lista) {
     lista.outerHTML = "";
   }
-  let query = document.getElementById('search').value;
-  let listaDeFilmes = await procurarFilme(query);
+  let query = document.getElementById('search') as HTMLInputElement;
+  let listaDeFilmes = await procurarFilme(query.value);
   let ul = document.createElement('ul');
   ul.id = "lista"
   for (const item of listaDeFilmes.results) {
     let li = document.createElement('li');
+    let button = document.createElement('button')
+    button.className = "add-movie"
+    button.textContent = "Adicionar Filme"
+    li.appendChild(document.createTextNode("ID: "))
+    li.appendChild(document.createTextNode(item.id))
+    li.appendChild(document.createTextNode(" - "))
     li.appendChild(document.createTextNode(item.original_title))
+    li.appendChild(document.createTextNode(" - Popularidade: "))
+    li.appendChild(document.createTextNode(item.popularity))
     ul.appendChild(li)
   }
+
   console.log(listaDeFilmes);
   searchContainer.appendChild(ul);
 })
 
-function preencherSenha() {
-  password = document.getElementById('senha').value;
+addButton.addEventListener('click', async () => {
+    
+})
+
+function preencherLogin() {
+  let userInput = document.getElementById('login') as HTMLInputElement;
+  username = userInput.value
   validateLoginButton();
 }
 
-function preencherLogin() {
-  username =  document.getElementById('login').value;
-  validateLoginButton();
+function preencherSenha() {
+    let passwordInput = document.getElementById('senha') as HTMLInputElement;
+    password = passwordInput.value
+    validateLoginButton();
 }
 
 function preencherApi() {
-  apiKey = document.getElementById('api-key').value;
-  validateLoginButton();
+    let apiKeyInput = document.getElementById('api-key') as HTMLInputElement;
+    apiKey = apiKeyInput.value
+    validateLoginButton();
 }
+
+window.preencherLogin = preencherLogin
+window.preencherSenha = preencherSenha
+window.preencherApi = preencherApi
 
 function validateLoginButton() {
   if (password && username && apiKey) {
     loginButton.disabled = false;
+    searchButton.disabled = false;
+    addButton.disabled = false;
   } else {
     loginButton.disabled = true;
+    searchButton.disabled = true;
+    addButton.disabled = true;
   }
 }
 
 class HttpClient {
-  static async get({url, method, body = null}) {
+  static async get({url, method, body = null}: HttpClientProps): Promise<Record<string, any>> {
     return new Promise((resolve, reject) => {
       let request = new XMLHttpRequest();
       request.open(method, url, true);
@@ -101,17 +131,18 @@ class HttpClient {
   }
 }
 
-async function procurarFilme(query) {
+async function procurarFilme(query: string): Promise<Record<string, any>> {
   query = encodeURI(query)
   console.log(query)
   let result = await HttpClient.get({
     url: `https://api.themoviedb.org/3/search/movie?api_key=${apiKey}&query=${query}`,
     method: "GET"
   })
+
   return result
 }
 
-async function adicionarFilme(filmeId) {
+async function adicionarFilme(filmeId: number): Promise<void> {
   let result = await HttpClient.get({
     url: `https://api.themoviedb.org/3/movie/${filmeId}?api_key=${apiKey}&language=en-US`,
     method: "GET"
@@ -119,7 +150,7 @@ async function adicionarFilme(filmeId) {
   console.log(result);
 }
 
-async function criarRequestToken () {
+async function criarRequestToken(): Promise<void> {
   let result = await HttpClient.get({
     url: `https://api.themoviedb.org/3/authentication/token/new?api_key=${apiKey}`,
     method: "GET"
@@ -127,8 +158,8 @@ async function criarRequestToken () {
   requestToken = result.request_token
 }
 
-async function logar() {
-  await HttpClient.get({
+async function logar(): Promise<void> {
+  const result = await HttpClient.get({
     url: `https://api.themoviedb.org/3/authentication/token/validate_with_login?api_key=${apiKey}`,
     method: "POST",
     body: {
@@ -137,9 +168,11 @@ async function logar() {
       request_token: `${requestToken}`
     }
   })
+
+  console.log(result)
 }
 
-async function criarSessao() {
+async function criarSessao(): Promise<void> {
   let result = await HttpClient.get({
     url: `https://api.themoviedb.org/3/authentication/session/new?api_key=${apiKey}&request_token=${requestToken}`,
     method: "GET"
@@ -147,7 +180,7 @@ async function criarSessao() {
   sessionId = result.session_id;
 }
 
-async function criarLista(nomeDaLista, descricao) {
+async function criarLista({nomeDaLista, descricao}: CriarListaProps): Promise<void> {
   let result = await HttpClient.get({
     url: `https://api.themoviedb.org/3/list?api_key=${apiKey}&session_id=${sessionId}`,
     method: "POST",
@@ -160,7 +193,7 @@ async function criarLista(nomeDaLista, descricao) {
   console.log(result);
 }
 
-async function adicionarFilmeNaLista(filmeId, listaId) {
+async function adicionarFilmeNaLista({filmeId, listaId}: AdicionarFilmeNaListaProps): Promise<void> {
   let result = await HttpClient.get({
     url: `https://api.themoviedb.org/3/list/${listaId}/add_item?api_key=${apiKey}&session_id=${sessionId}`,
     method: "POST",
@@ -171,23 +204,10 @@ async function adicionarFilmeNaLista(filmeId, listaId) {
   console.log(result);
 }
 
-async function pegarLista() {
+async function pegarLista(): Promise<void> {
   let result = await HttpClient.get({
     url: `https://api.themoviedb.org/3/list/${listId}?api_key=${apiKey}`,
     method: "GET"
   })
   console.log(result);
 }
-
-{/* <div style="display: flex;">
-  <div style="display: flex; width: 300px; height: 100px; justify-content: space-between; flex-direction: column;">
-      <input id="login" placeholder="Login" onchange="preencherLogin(event)">
-      <input id="senha" placeholder="Senha" type="password" onchange="preencherSenha(event)">
-      <input id="api-key" placeholder="Api Key" onchange="preencherApi()">
-      <button id="login-button" disabled>Login</button>
-  </div>
-  <div id="search-container" style="margin-left: 20px">
-      <input id="search" placeholder="Escreva...">
-      <button id="search-button">Pesquisar Filme</button>
-  </div>
-</div>*/}

@@ -17,7 +17,7 @@ let pessoa3 = {
 };
 
 let pessoa4 = {
-    nome = "carlos",
-    idade = 19,
-    profissao = "padeiro"
+    nome: "carlos",
+    idade: 19,
+    profissao: "padeiro"
 }
